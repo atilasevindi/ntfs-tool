@@ -75,16 +75,13 @@ check_dependencies() {
     fi
 
     # Check FUSE-T (Kext-less FUSE engine)
-    local fuse_detected=false
     if [[ -d "/Library/Application Support/fuse-t" ]] || \
        [[ -f "/usr/local/lib/libfuse-t.dylib" ]] || \
        [[ -f "${HOMEBREW_PREFIX}/lib/libfuse-t.dylib" ]] || \
        { [[ -n "$BREW_BIN" ]] && "$BREW_BIN" list --cask fuse-t >/dev/null 2>&1; }; then
-        fuse_detected=true
         log_success "FUSE-T (Kext-less FUSE implementation) is installed."
     elif [[ -d "/Library/Filesystems/macfuse.fs" ]]; then
         log_warning "macFUSE detected (Requires Kernel Extension authorization in Recovery Mode on Apple Silicon)."
-        fuse_detected=true
     else
         log_error "FUSE-T is not installed!"
         all_good=false
