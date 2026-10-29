@@ -122,6 +122,13 @@ install_dependencies() {
     "$BREW_BIN" tap macos-fuse-t/homebrew-cask 2>/dev/null || true
     "$BREW_BIN" tap gromgit/fuse 2>/dev/null || true
 
+    # Trust third-party taps if Homebrew Tap Trust is active
+    if "$BREW_BIN" trust --help &>/dev/null; then
+        log_info "Applying Homebrew tap trust for third-party formulae..."
+        "$BREW_BIN" trust macos-fuse-t/homebrew-cask 2>/dev/null || true
+        "$BREW_BIN" trust gromgit/fuse 2>/dev/null || true
+    fi
+
     log_info "Installing FUSE-T (User-space Kext-less FUSE engine)..."
     "$BREW_BIN" install --cask fuse-t || true
 
@@ -137,7 +144,8 @@ install_dependencies() {
     if [[ -x "$NTFS3G_BIN" ]]; then
         log_success "NTFS-3G installed and verified: $NTFS3G_BIN"
     else
-        log_error "Failed to verify NTFS-3G binary. Try running manually: brew install gromgit/fuse/ntfs-3g-mac"
+        log_error "Failed to verify NTFS-3G binary. Try running manually:"
+        echo "  brew trust gromgit/fuse && brew install ntfs-3g-mac"
         exit 1
     fi
 

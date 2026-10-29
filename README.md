@@ -1,7 +1,7 @@
 # ntfs-tool 🚀
 
 > **Modern, Kext-less NTFS Read/Write Manager for macOS.**  
-> Seamlessly mount, write, and manage Windows NTFS USB hard drives on macOS (Sonoma, Sequoia, Tahoe 26+) on Apple Silicon (M1/M2/M3/M4) & Intel Macs without disabling System Integrity Protection (SIP) or kernel security.
+> Seamlessly mount, write, and manage Windows NTFS USB hard drives on macOS (Sonoma, Sequoia, Tahoe 26+) on Apple Silicon (M1/M2/M3/M4) & Intel Macs without disabling System Integrity Protection (SIP) or lowering kernel security.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-macOS%2013%2B%20%7C%20Apple%20Silicon%20%26%20Intel-black.svg)]()
@@ -62,16 +62,17 @@ Starting with modern macOS versions (macOS 14 Sonoma, 15 Sequoia, and 26 Tahoe),
 Before installing `ntfs-tool`, ensure you have [Homebrew](https://brew.sh) installed. Then install the two required open-source engines:
 
 ```bash
-# 1. Tap the required repositories
+# 1. Tap and trust the required third-party repositories
 brew tap macos-fuse-t/homebrew-cask
 brew tap gromgit/fuse
+brew trust gromgit/fuse macos-fuse-t/homebrew-cask
 
-# 2. Install FUSE-T (Kext-less FUSE) and NTFS-3G
+# 2. Install FUSE-T (Kext-less FUSE engine) and NTFS-3G
 brew install --cask fuse-t
 brew install ntfs-3g-mac
 ```
 
-*(Note: You can also run `sudo ntfs-tool install-deps` after installing the tool to have it automatically install these dependencies for you.)*
+*(Note: You can also run `sudo ntfs-tool install-deps` after installing the tool to have it automatically configure and install these dependencies.)*
 
 ---
 
@@ -155,6 +156,13 @@ sudo ntfs-tool uninstall-daemon
 ---
 
 ## 🔍 Troubleshooting & FAQ
+
+#### Q: Homebrew error: "Refusing to load formula gromgit/fuse/ntfs-3g-mac from untrusted tap"?
+> **Answer**: Modern versions of Homebrew enforce a "Tap Trust" security policy for third-party taps. Authorize the tap by running:
+> ```bash
+> brew trust gromgit/fuse macos-fuse-t/homebrew-cask
+> ```
+> Then run `brew install ntfs-3g-mac`.
 
 #### Q: "Operation not permitted" or permission errors when mounting?
 > **Answer**: Filesystem mounting requires root privileges on macOS. Ensure you prepend commands with `sudo` (e.g., `sudo ntfs-tool mount`).
