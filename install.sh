@@ -20,7 +20,7 @@ if [[ "$(uname)" != "Darwin" ]]; then
     exit 1
 fi
 
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 BIN_SOURCE="$SOURCE_DIR/bin/ntfs-tool"
 
 # Target installation directory

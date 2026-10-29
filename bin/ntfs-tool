@@ -9,13 +9,12 @@
 set -o pipefail
 
 VERSION="1.0.0"
-SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)/$(basename "${BASH_SOURCE[0]}")"
 
 # Terminal ANSI Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 DIM='\033[2m'
@@ -80,7 +79,7 @@ check_dependencies() {
     if [[ -d "/Library/Application Support/fuse-t" ]] || \
        [[ -f "/usr/local/lib/libfuse-t.dylib" ]] || \
        [[ -f "${HOMEBREW_PREFIX}/lib/libfuse-t.dylib" ]] || \
-       ($BREW_BIN list --cask fuse-t &>/dev/null); then
+       { [[ -n "$BREW_BIN" ]] && "$BREW_BIN" list --cask fuse-t >/dev/null 2>&1; }; then
         fuse_detected=true
         log_success "FUSE-T (Kext-less FUSE implementation) is installed."
     elif [[ -d "/Library/Filesystems/macfuse.fs" ]]; then
@@ -175,7 +174,7 @@ list_ntfs_disks() {
             vol_name="$(basename "$mnt")"
 
             echo -e "  ${BOLD}Device Node:${NC}  $dev"
-            echo -e "  ${BOLD}Volume Name:${NC  }  $vol_name"
+            echo -e "  ${BOLD}Volume Name:${NC}  $vol_name"
             echo -e "  ${BOLD}Mount Point:${NC}  $mnt"
             echo -e "  ${BOLD}Access Mode:${NC}  $mode"
             echo -e "  ${BOLD}Mount Flags:${NC}  ${DIM}$opts${NC}"
@@ -195,7 +194,7 @@ list_ntfs_disks() {
                     local info_name
                     info_name="$(diskutil info "$dev_node" 2>/dev/null | grep "Volume Name:" | awk -F':' '{print $2}' | xargs || echo "Untitled")"
                     echo -e "  ${BOLD}Device Node:${NC}  $dev_node"
-                    echo -e "  ${BOLD}Volume Name:${NC  }  $info_name"
+                    echo -e "  ${BOLD}Volume Name:${NC}  $info_name"
                     echo -e "  ${BOLD}Status:${NC}       ${RED}Unmounted${NC}"
                     echo -e "  ----------------------------------------------------"
                 fi
