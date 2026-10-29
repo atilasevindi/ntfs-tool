@@ -20,9 +20,10 @@ Starting with modern macOS versions (macOS 14 Sonoma, 15 Sequoia, and 26 Tahoe),
 ### 💡 The Solution: `ntfs-tool` + FUSE-T
 
 `ntfs-tool` bridges this gap using **[FUSE-T](https://www.fuse-t.org/)** and **NTFS-3G**:
-- **Zero Kernel Extensions**: FUSE-T exposes the filesystem through a local NFS v4 loopback.
+- **Zero Kernel Extensions**: FUSE-T exposes the filesystem through a local NFS v4 loopback and native FSKit modules.
 - **Full SIP & Startup Security Intact**: No need to downgrade your Mac's security policy.
 - **Automated Workflow**: Unmounts the restrictive read-only FSKit mount, creates mount points, applies optimized flags, verifies write capability, and notifies you when ready.
+- **Auto Self-Healing**: Automatically detects and fixes dynamic library collisions caused by legacy `macFUSE` remnants.
 - **Background Watcher**: Can run as a macOS `LaunchDaemon` to automatically detect and remount any connected NTFS drive on the fly!
 
 ```
@@ -73,6 +74,18 @@ brew install ntfs-3g-mac
 ```
 
 *(Note: You can also run `sudo ntfs-tool install-deps` after installing the tool to have it automatically configure and install these dependencies.)*
+
+---
+
+## ⚙️ macOS System Settings Configuration
+
+On modern macOS (Tahoe 26+ and Sequoia 15+), FUSE-T operates as an **FSKit Module** without kernel privileges.
+
+1. Open **System Settings** → **General** → **Extensions** (or search for **Extensions** in System Settings).
+2. Click on **fuse-t Extensions**.
+3. Toggle **FSKit Modules** to **ON** (Blue) and click **Done**.
+
+> *Note: This allows user-space filesystem functionality without requiring any Kernel Extension or Recovery Mode security downgrades.*
 
 ---
 
@@ -155,23 +168,38 @@ sudo ntfs-tool uninstall-daemon
 
 ---
 
-## 🔍 Troubleshooting & FAQ
+## 🔍 Troubleshooting & Common Errors
 
-#### Q: Homebrew error: "Refusing to load formula gromgit/fuse/ntfs-3g-mac from untrusted tap"?
-> **Answer**: Modern versions of Homebrew enforce a "Tap Trust" security policy for third-party taps. Authorize the tap by running:
-> ```bash
-> brew trust gromgit/fuse macos-fuse-t/homebrew-cask
-> ```
-> Then run `brew install ntfs-3g-mac`.
+### 1. "System Extension Blocked" (Developer: Benjamin Fleischer)
+**Cause:** If you had the old `macFUSE` installed on your Mac in the past, `ntfs-3g` might default to loading `/usr/local/lib/libfuse.2.dylib` from the legacy macFUSE installation, which attempts to trigger a blocked kernel extension (`macfuse.kext`).  
+**Fix:** `ntfs-tool` automatically heals this on execution. You can also manually redirect the dynamic library link to FUSE-T:
+```bash
+sudo rm -f /usr/local/lib/libfuse.2.dylib /usr/local/lib/libfuse.dylib
+sudo ln -sf /usr/local/lib/libfuse-t.dylib /usr/local/lib/libfuse.2.dylib
+sudo ln -sf /usr/local/lib/libfuse-t.dylib /usr/local/lib/libfuse.dylib
+```
 
-#### Q: "Operation not permitted" or permission errors when mounting?
-> **Answer**: Filesystem mounting requires root privileges on macOS. Ensure you prepend commands with `sudo` (e.g., `sudo ntfs-tool mount`).
+---
 
-#### Q: The drive is labeled "Read-Only (Default macOS FSKit Driver)"?
-> **Answer**: macOS natively mounts NTFS drives using FSKit in read-only mode upon connection. Run `sudo ntfs-tool mount` to safely unmount the FSKit instance and mount it with NTFS-3G in read/write mode.
+### 2. "FSKit Modules" Disabled in System Settings
+**Cause:** In macOS Tahoe and Sequoia, user-space filesystem extensions require an initial toggle approval in System Settings.  
+**Fix:** Open **System Settings** → **General** → **Extensions** → **fuse-t Extensions** → Toggle **FSKit Modules** to **ON**.
 
-#### Q: Do I need to disable SIP (System Integrity Protection)?
-> **Answer**: **No!** Because `ntfs-tool` utilizes **FUSE-T** (which operates in user-space via a local NFS loopback), SIP and Apple Silicon Startup Security remain 100% active and untouched.
+---
+
+### 3. Homebrew error: "Refusing to load formula ... from untrusted tap"
+**Cause:** Modern Homebrew enforces a strict "Tap Trust" policy for third-party taps.  
+**Fix:** Run the following command to trust the taps:
+```bash
+brew trust gromgit/fuse macos-fuse-t/homebrew-cask
+brew install ntfs-3g-mac
+```
+
+---
+
+### 4. "Operation not permitted" or permission errors when mounting
+**Cause:** Filesystem mounting requires root privileges on macOS.  
+**Fix:** Ensure you prepend commands with `sudo` (e.g., `sudo ntfs-tool mount`).
 
 ---
 

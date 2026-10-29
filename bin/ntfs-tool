@@ -52,6 +52,27 @@ notify() {
 }
 
 # ------------------------------------------------------------------------------
+# Dynamic Library Self-Healing (Redirect legacy macFUSE to FUSE-T)
+# ------------------------------------------------------------------------------
+ensure_fuse_t_symlinks() {
+    local fuset_lib="/usr/local/lib/libfuse-t.dylib"
+    if [[ -f "$fuset_lib" ]]; then
+        local need_fix=false
+        if [[ ! -L "/usr/local/lib/libfuse.2.dylib" ]] || [[ "$(readlink "/usr/local/lib/libfuse.2.dylib" 2>/dev/null)" != *"fuse-t"* ]]; then
+            need_fix=true
+        fi
+
+        if $need_fix; then
+            log_info "Ensuring libfuse compatibility symlinks point to modern FUSE-T..."
+            rm -f /usr/local/lib/libfuse.2.dylib /usr/local/lib/libfuse.dylib 2>/dev/null || true
+            ln -sf "$fuset_lib" /usr/local/lib/libfuse.2.dylib
+            ln -sf "$fuset_lib" /usr/local/lib/libfuse.dylib
+            log_success "Redirected libfuse to FUSE-T (kext-less engine)."
+        fi
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # 1. Dependency and Environment Healthcheck (Doctor)
 # ------------------------------------------------------------------------------
 check_dependencies() {
@@ -80,11 +101,15 @@ check_dependencies() {
        [[ -f "${HOMEBREW_PREFIX}/lib/libfuse-t.dylib" ]] || \
        { [[ -n "$BREW_BIN" ]] && "$BREW_BIN" list --cask fuse-t >/dev/null 2>&1; }; then
         log_success "FUSE-T (Kext-less FUSE implementation) is installed."
-    elif [[ -d "/Library/Filesystems/macfuse.fs" ]]; then
-        log_warning "macFUSE detected (Requires Kernel Extension authorization in Recovery Mode on Apple Silicon)."
+        ensure_fuse_t_symlinks
     else
         log_error "FUSE-T is not installed!"
         all_good=false
+    fi
+
+    # Check legacy macFUSE presence
+    if [[ -d "/Library/Filesystems/macfuse.fs" ]]; then
+        log_warning "Legacy macFUSE files detected. Compatibility redirection to FUSE-T is active."
     fi
 
     # Check NTFS-3G binary
@@ -134,6 +159,9 @@ install_dependencies() {
 
     log_info "Installing NTFS-3G compiled for macOS..."
     "$BREW_BIN" install gromgit/fuse/ntfs-3g-mac || "$BREW_BIN" install ntfs-3g || true
+
+    # Self-heal library links
+    ensure_fuse_t_symlinks
 
     # Re-evaluate binary path
     NTFS3G_BIN="${HOMEBREW_PREFIX}/bin/ntfs-3g"
@@ -240,6 +268,9 @@ mount_rw() {
         echo "  sudo $SCRIPT_PATH mount $target_dev"
         exit 1
     fi
+
+    # Ensure libfuse symlink integrity
+    ensure_fuse_t_symlinks
 
     if [[ ! -x "$NTFS3G_BIN" ]]; then
         log_error "ntfs-3g binary not found. Please run: $SCRIPT_PATH install-deps"

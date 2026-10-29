@@ -35,6 +35,13 @@ echo -e "Copying binary to ${BOLD}$TARGET_BIN${NC}..."
 sudo cp "$BIN_SOURCE" "$TARGET_BIN"
 sudo chmod +x "$TARGET_BIN"
 
+# Ensure FUSE-T library compatibility symlinks
+if [[ -f "/usr/local/lib/libfuse-t.dylib" ]]; then
+    sudo rm -f /usr/local/lib/libfuse.2.dylib /usr/local/lib/libfuse.dylib 2>/dev/null || true
+    sudo ln -sf /usr/local/lib/libfuse-t.dylib /usr/local/lib/libfuse.2.dylib
+    sudo ln -sf /usr/local/lib/libfuse-t.dylib /usr/local/lib/libfuse.dylib
+fi
+
 echo -e "${GREEN}✔ ntfs-tool successfully installed to $TARGET_BIN!${NC}\n"
 
 # Run doctor check
